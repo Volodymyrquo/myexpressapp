@@ -1,0 +1,21 @@
+{
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es2021": true
+    },
+    "extends": ["google", "plugin:prettier/recommended"],
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "commonjs"
+    },
+    "rules": {
+        "prettier/prettier": [
+            "error",
+            {
+                "singleQuote": true,
+                "parser": "flow"
+            }
+        ]
+    }
+}
