@@ -1,85 +1,91 @@
 const express = require('express');
-const sqlite3 = require('sqlite3');
+const {PrismaClient} = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const app = express();
 const port = 3000;
 
 app.use(express.json());
-const db = new sqlite3.Database(':memory:');
-db.serialize(() => {
-    db.run(
-        'CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT)'
-    );
+
+
+app.get('/users', async(req, res) => {
+    try {
+        const users = await prisma.user.findMany();
+        res.json(users);
+    
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+
+    }
 });
 
-app.get('/users', (req, res) => {
-    db.all('SELECT * FROM users', (err, rows) => {
-        if (err) {
-            return res.status(400).json({ error: err.message });
-        }
-
-        res.json(rows);
-    });
-});
-
-app.get('/users/:id', (req, res) => {
+app.get('/users/:id', async(req, res) => {
     const { id } = req.params;
-    db.get(`SELECT * FROM users WHERE id = ?`, [id], (err, row) => {
-        if (err) {
-            return res.status(400).json({ error: err.message });
-        }
-        if(!row){
-            return res.status(404).json({ error: 'User not found' });
-        }
-              res.json(row);
-    });
-});
-
-app.post('/users', (req, res) => {
-    const { name, email } = req.body;
-    db.run(
-        `INSERT INTO users (name, email) VALUES (?, ?)`,
-        [name, email],
-        function (err) {
-            if (err) {
-                res.status(400).json({ error: err.message });
-                return;
+    try{
+        const user = await prisma.user.findUnique({
+            where: {
+                id: Number(id)
             }
-            res.status(201).json({ id: this.lastID });
-        }
-    );
+        });
+       if(user) {res.json(user);}
+       else {res.status(404).json({ message: 'User not found' });}
+    } catch(err){
+        res.status(400).json({ error: err.message });
+    }
 });
 
-app.delete('/users/:id', (req, res) => {
+app.post('/users', async (req, res) => {
+    const { name, email } = req.body;
+    try{
+        const user = await prisma.user.create({
+            data: {
+                name,
+                email
+            }
+        });
+        res.status(201).json(user);
+    } catch(err){
+        res.status(400).json({ error: err.message });
+    }
+});
+
+app.delete('/users/:id', async(req, res) => {
     const { id } = req.params;
-    db.run(`DELETE FROM users WHERE id = ?`, [id], function (err) {
-        if (err) {
-            res.status(400).json({ error: err.message });
-            return;
-        }
-        res.status(201).json({ message: `Row deleted: ${this.changes}` });
-    });
+    try {
+        const user = await prisma.user.delete({
+            where: {
+                id: parseInt(id)
+            }
+        });
+        res.json({message: 'User deleted'});
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
 });
 
-app.put('/users/:id', (req, res) => {
+app.put('/users/:id', async(req, res) => {
     const { id } = req.params;
     const { name, email } = req.body;
-    db.run(`UPDATE users SET name = ?, email = ? WHERE id = ?`, [
-        name,
-        email,
-        id,
-    ],function(err){
-        if(err){
-            res.status(400).json({ error: err.message });
-            return;
+try {
+    const user = await prisma.user.update({
+        where: {
+            id: Number(id)
+        },
+        data: {
+            name,
+            email
         }
-        res.status(201).json({ message:`Row updated: ${this.changes}` });
     });
+    res.json(user);
+} catch (err) {
+    res.status(400).json({ error: err.message });
+}
+    
 });
 
-// app.get('/', (req, res) => {
-//     res.send('Welcome to my Express App!');
-// });
+app.get('/', (req, res) => {
+    res.send('Welcome to my Express App!');
+});
 
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`);

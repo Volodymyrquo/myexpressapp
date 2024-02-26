@@ -4,7 +4,7 @@
         "commonjs": true,
         "es2021": true
     },
-    "extends": ["google", "plugin:prettier/recommended"],
+    "extends": ["google", "plugin:prettier/recommended", "prisma"],
     "parserOptions": {
         "ecmaVersion": "latest",
         "sourceType": "commonjs"
