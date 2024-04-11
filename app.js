@@ -2,6 +2,7 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const Joi = require('joi');
 const NodeCache = require('node-cache')
+const bcrypt = require('bcrypt')
 
 const prisma = new PrismaClient();
 const cache = new NodeCache();
@@ -72,6 +73,7 @@ app.get('/api/books', async (req, res) => {
 const userSchema = Joi.object({
     name: Joi.string().min(3).max(30).required(),
     email: Joi.string().email().required(),
+    password:Joi.string()
 });
 
 app.post('/users', async (req, res) => {
@@ -133,6 +135,30 @@ app.get('/', (req, res) => {
 
 app.get('/status',(req,res)=>{
     res.status(200).send('Server is working')
+})
+
+app.post('/register', async (req,res)=>{
+    const userData = req.body;
+    const { value, error } = userSchema.validate(userData);
+    if (error) {
+        return res.status(400).json({ error: error.message });
+    }
+    const {password, name, email} = value;
+    try {
+        const salt = await bcrypt.genSalt(10)
+        const hashedPassword = await bcrypt.hash(password, salt)
+        await prisma.user.create({
+            data:{
+                email,
+               hashedPassword,
+                name
+            }
+        })
+
+        res.status(200).send("User was created")
+    } catch (error) {
+        res.status(500).json({ error: err.message });
+    }
 })
 
 if (require.main === module) {
