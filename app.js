@@ -7,16 +7,14 @@ const prisma = new PrismaClient();
 const cache = new NodeCache();
 
 const app = express();
-const port = 3000;
+const PORT = 3000;
 app.use(express.json());
 app.use((req, res, next) => {
     console.log(req.method, req.url);
     next();
 });
 
-app.get('/health',(req,res)=>{
-    res.status(200).send('OK')
-})
+
 app.get('/users/:id', async (req, res) => {
     const { id } = req.params;
     const cachedData = cache.get(id);
@@ -133,9 +131,13 @@ app.get('/', (req, res) => {
     res.send('Welcome to my Express App!');
 });
 
+app.get('/status',(req,res)=>{
+    res.status(200).send('Server is working')
+})
+
 if (require.main === module) {
-    app.listen(port, () => {
-        console.log(`Example app listening at http://localhost:${port}`);
+    app.listen(PORT, () => {
+        console.log(`Example app listening at http://localhost:${PORT}`);
     });
 }
 
