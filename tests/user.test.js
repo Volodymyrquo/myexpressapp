@@ -1,6 +1,6 @@
 const app = require('../app');
 const { PrismaClient } = require('@prisma/client');
-const { describe, after } = require('node:test');
+const { describe } = require('node:test');
 const request = require('supertest');
 
 const prisma = new PrismaClient();
@@ -26,6 +26,14 @@ describe('GET /users', () => {
         await prisma.$disconnect();
     });
 
+    test('should handle invalid page and limit parameters', async ()=>{
+        const response = await request(app).get('/users?page=-2&limit=abc');
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toBeInstanceOf(Array);
+
+
+    })
+
     test('should respond with a list of users', async () => {
         const response = await request(app).get('/users');
 
@@ -40,11 +48,4 @@ describe('GET /users', () => {
         expect(response.body.length).toBe(2);
     });
 
-    test('should handle invalid page and limit parameters', async ()=>{
-        const response = await request(app).get('/users?page=-2&limit=abc');
-        expect(response.statusCode).toBe(200);
-        expect(response.body).toBeInstanceOf(Array);
-
-
-    })
 });

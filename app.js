@@ -1,7 +1,10 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const Joi = require('joi');
+const NodeCache = require('node-cache')
+
 const prisma = new PrismaClient();
+const cache = new NodeCache();
 
 const app = express();
 const port = 3000;
@@ -9,6 +12,33 @@ app.use(express.json());
 app.use((req, res, next) => {
     console.log(req.method, req.url);
     next();
+});
+
+
+app.get('/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const cachedData = cache.get(id);
+
+    try {
+        if(!cachedData){
+            const user = await prisma.user.findUnique({
+                where: {
+                    id: Number(id),
+                },
+            });
+            if (user) {
+                cache.set(user.id,user,60)
+
+                res.status(200).json(user);
+            } else {
+                res.status(404).json({ message: 'Користувача не знайдено' });
+            }
+        } else {
+            res.status(200).json(cachedData);
+        }
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
 });
 
 app.get('/users', async (req, res) => {
@@ -39,23 +69,6 @@ app.get('/api/books', async (req, res) => {
     }
 });
 
-app.get('/users/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        const user = await prisma.user.findUnique({
-            where: {
-                id: Number(id),
-            },
-        });
-        if (user) {
-            res.status(200).json(user);
-        } else {
-            res.status(404).json({ message: 'Користувача не знайдено' });
-        }
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
 const userSchema = Joi.object({
     name: Joi.string().min(3).max(30).required(),
     email: Joi.string().email().required(),
