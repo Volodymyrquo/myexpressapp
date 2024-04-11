@@ -14,7 +14,9 @@ app.use((req, res, next) => {
     next();
 });
 
-
+app.get('/health',(req,res)=>{
+    res.status(200).send('OK')
+})
 app.get('/users/:id', async (req, res) => {
     const { id } = req.params;
     const cachedData = cache.get(id);
@@ -73,6 +75,7 @@ const userSchema = Joi.object({
     name: Joi.string().min(3).max(30).required(),
     email: Joi.string().email().required(),
 });
+
 app.post('/users', async (req, res) => {
     const userData = req.body;
     const { value, error } = userSchema.validate(userData);
