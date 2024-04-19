@@ -3,6 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const Joi = require('joi');
 const NodeCache = require('node-cache')
 const bcrypt = require('bcrypt')
+const session = require('express-session')
 
 const prisma = new PrismaClient();
 const cache = new NodeCache();
@@ -15,6 +16,12 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use(session({
+    secret:"you_secret_key_here",
+    resave:false,
+    saveUninitialized:true
+
+}))
 
 app.get('/users/:id', async (req, res) => {
     const { id } = req.params;
@@ -176,9 +183,49 @@ app.post('/login',async(req,res)=>{
         if(!isValid){
             return res.status(401).send("Invalid password");
         }
+        req.session.username=user.name
+        req.session.userId=user.id
         res.status(200).send("Login successful")
     } catch (error) {
         res.status(500).send("Login error");
+        console.log(error)
+ 
+    }
+})
+app.get('/profile', async (req,res)=>{
+    if(req.session.username){
+        res.send(`Hi, ${req.session.username}`)
+    } else {res.send("Please log in")}
+})
+app.post('/change-password',async(req,res)=>{
+    const {email, password,newPassword}= req.body;
+    try {
+        const user = await prisma.user.findUnique({
+            where:{
+                email
+            }
+        })
+        if(!user){
+            return res.status(401).send("No user found");
+        }
+        const isValid =  bcrypt.compare(password,user.hashedPassword);
+
+        if(!isValid){
+            return res.status(401).send("Invalid password");
+        }
+        const salt = await bcrypt.genSalt(10)
+        const hashedPassword = await bcrypt.hash(newPassword, salt)
+        await prisma.user.update({
+            where:{
+                email,
+            },
+            data:{
+                hashedPassword,
+                }
+        })
+        res.status(200).send("Password changed successfully")
+    } catch (error) {
+        res.status(500).send("Change password error");
         console.log(error)
  
     }

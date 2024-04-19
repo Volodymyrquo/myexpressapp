@@ -1,4 +1,9 @@
 {
-    "cSpell.words": ["autoincrement", "знайдено", "Користувача"],
+    "cSpell.words": [
+        "autoincrement",
+        "resave",
+        "знайдено",
+        "Користувача"
+    ],
     "editor.formatOnSave": true
 }
